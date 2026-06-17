@@ -42,6 +42,14 @@ Availability handling (v1, decided): `A` / `AS` / `AR` / `-` all collapse to **"
 (summit-vs-remote ignored; unanswered `-` assumed available). `?` = available-but-penalized.
 `X` = unavailable (hard block).
 
+**Roster membership (column C label).** Each person row carries an `Avail` / `Shift` label in
+column C; the parser uses it as the **roster gate** (this is what separates real scientists from
+sentinel/divider rows like `Science Support` or `(keep these rows empty)` that also have text in
+column A). A row whose label is **`Out`** is a person kept in the sheet for records but **excluded
+from the rotation** — never scheduled and never counted in any fair-share average (use this for
+occasional coverers who aren't official rotation members). The CLI reports who it excluded. Markers
+live in `parser.LayoutConfig` (`avail_label`, `inactive_label`).
+
 ## Architecture — pure core behind an I/O boundary
 
 The single load-bearing decision: **`engine/` imports nothing from `gspread` or the filesystem.**

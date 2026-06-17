@@ -161,9 +161,17 @@ team already uses):
   - the **availability** row (top) — one code per date, and
   - the **shift** row (below) — the assigned shift/role for that date, if any.
 - **Column A** holds the person's name (merged across their two rows);
-  **column B** their initials; **column C** the static `avail`/`shift` labels.
+  **column B** their initials; **column C** the per-row `Avail`/`Shift` label.
 - Rows 1, 3, 4, 5 (month header, weekday, availability count, daily summary) are
   ignored.
+
+**Column C is the roster gate.** A real rotation member's availability row says
+`Avail` in column C. To keep someone in the sheet but **take them out of the
+rotation** — e.g. someone who occasionally covers but isn't an official member —
+change their column C from `Avail` to **`Out`**. They'll never be scheduled and
+won't count toward anyone's fair share; the tool prints who it excluded. (This is
+the right way to handle a non-rotation person — do **not** fill their row with
+`X`, which would still count them in the fairness average.)
 
 If your sheet differs, the positions live in one place — `LayoutConfig` in
 [shift_proposer/io/parser.py](shift_proposer/io/parser.py) — and can be adjusted.

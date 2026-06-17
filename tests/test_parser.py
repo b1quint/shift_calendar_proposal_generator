@@ -139,3 +139,23 @@ def test_sentinel_rows_without_avail_label_are_not_people():
     assert parsed.grid.people == (ANN,)
     assert Person("(keep these rows empty)") not in parsed.grid.people
     assert parsed.existing == {}  # the sentinel's row must not fill any date
+
+
+def test_out_label_excludes_a_person_from_the_rotation():
+    # A real, named person marked "Out": kept in the sheet but not scheduled,
+    # not counted, and reported in `inactive`. Their shift row must not fill dates.
+    grid = [
+        ["", "", "", "2026-06-01", "2026-06-02", "2026-06-03"],  # row 0: dates
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["Ann", "AB", "Avail", "A", "A", "A"],  # active rotation member
+        ["", "", "Shift", "", "", ""],
+        ["Brian", "BS", "Out", "A", "A", "A"],  # covers shifts, not in rotation
+        ["", "", "Shift", "BS", "BS", "BS"],  # his coverage must NOT count as filled
+    ]
+    parsed = parse_grid(grid, layout=LayoutConfig(date_row=0))
+    assert parsed.grid.people == (ANN,)
+    assert parsed.inactive == (Person("Brian"),)
+    assert parsed.existing == {}  # Brian's shift row does not fill any date

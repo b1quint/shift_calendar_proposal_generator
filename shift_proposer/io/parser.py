@@ -13,10 +13,12 @@ for the 0-indexed values this module uses):
 * **Column A** — person name, merged vertically across that person's two rows.
 * **Column B** — person initials (used elsewhere as the "who is covering"
   token); merged vertically. Captured but unused by v1 logic.
-* **Column C** — per-row ``Avail`` / ``Shift`` label. Used as the roster gate:
-  a real availability row carries ``Avail`` here, which is how we tell a
-  scientist's row from sentinel/divider rows (``Science Support``, ``(keep these
-  rows empty)``) that also have text in column A.
+* **Column C** — per-row ``Avail`` / ``Shift`` label, used as the roster gate.
+  A real availability row carries ``Avail``; this is how we tell a scientist's
+  row from sentinel/divider rows (``Science Support``, ``(keep these rows
+  empty)``) that also have text in column A. A row whose label is ``Out`` is a
+  person kept in the sheet for records but **excluded from the rotation** — not
+  scheduled and not counted in any fair-share average.
 * **Column D onward** — the calendar, one date per column, to the sheet's end.
 * **Row 1** — month header (merged per month). Ignored.
 * **Row 2** — the date for each calendar column.
@@ -66,6 +68,7 @@ class LayoutConfig:
     label_col: int = 2  # column C: per-row "Avail"/"Shift" marker
     first_date_col: int = 3  # column D: first calendar column
     avail_label: str = "Avail"  # marks a real availability row; "" disables the gate
+    inactive_label: str = "Out"  # row kept for records but excluded from scheduling
 
 
 # Module-level default so it is not constructed in a function signature (B008).
@@ -74,10 +77,16 @@ _DEFAULT_LAYOUT = LayoutConfig()
 
 @dataclass(frozen=True)
 class ParsedSheet:
-    """The parser's output: the availability grid plus existing assignments."""
+    """The parser's output: the availability grid, assignments, and exclusions.
+
+    ``inactive`` lists people present in the sheet but explicitly marked out of
+    the rotation (``Out`` in the label column): they are neither scheduled nor
+    counted in any fair-share average. Reported so the exclusion is visible.
+    """
 
     grid: AvailabilityGrid
     existing: dict[Person, list[date]] = field(default_factory=dict)
+    inactive: tuple[Person, ...] = ()
 
 
 def _cell(rows: Sequence[Sequence[str]], r: int, c: int) -> str:
@@ -136,19 +145,31 @@ def _is_assigned(cell: str) -> bool:
     return bool(cell) and cell != "-"
 
 
-def _is_person_row(rows: Sequence[Sequence[str]], r: int, layout: LayoutConfig) -> bool:
-    """True if row ``r`` is a real person's availability row.
+def _person_status(rows: Sequence[Sequence[str]], r: int, layout: LayoutConfig) -> str:
+    """Classify candidate row ``r`` as ``active``, ``inactive``, or ``skip``.
 
-    Requires a non-empty name and, when ``layout.avail_label`` is set, the
-    ``Avail`` marker in the label column. The marker is what distinguishes a
+    The label column (``Avail`` / ``Shift`` / ``Out``) is what distinguishes a
     scientist's row from sentinel/divider rows that also carry text in column A
-    (e.g. ``Science Support``, ``(keep these rows empty)``).
+    (e.g. ``Science Support``, ``(keep these rows empty)``):
+
+    * ``active`` — a real rotation member (``Avail``): scheduled and counted.
+    * ``inactive`` — present but explicitly out of the rotation (``Out``):
+      excluded from both scheduling and the fair-share average.
+    * ``skip`` — a structural/sentinel row (no name, or an unrecognized label).
+
+    When ``layout.avail_label`` is empty the gate is disabled: any named row is
+    ``active`` (used by trimmed test/custom layouts with no label column).
     """
     if not _cell(rows, r, layout.name_col):
-        return False
+        return "skip"
     if not layout.avail_label:
-        return True
-    return _cell(rows, r, layout.label_col).casefold() == layout.avail_label.casefold()
+        return "active"
+    label = _cell(rows, r, layout.label_col).casefold()
+    if label == layout.avail_label.casefold():
+        return "active"
+    if layout.inactive_label and label == layout.inactive_label.casefold():
+        return "inactive"
+    return "skip"
 
 
 def parse_grid(
@@ -161,9 +182,10 @@ def parse_grid(
 
     ``dates`` may be supplied already-resolved (recommended until the live date
     encoding is confirmed); otherwise they are read from the date row via
-    :func:`parse_date_row`. Person rows are identified by the ``Avail`` marker in
-    the label column (see :func:`_is_person_row`); non-person rows are skipped, so
-    sentinel/divider rows never become phantom candidates.
+    :func:`parse_date_row`. Rows are classified by the label column (see
+    :func:`_person_status`): ``Avail`` rows become scheduled people, ``Out`` rows
+    are recorded as ``inactive`` (excluded entirely), everything else is skipped —
+    so sentinel/divider rows never become phantom candidates.
     """
     layout = layout or _DEFAULT_LAYOUT
     if dates is None:
@@ -176,9 +198,14 @@ def parse_grid(
     people: list[Person] = []
     codes: dict[tuple[Person, date], Code] = {}
     existing: dict[Person, list[date]] = {}
+    inactive: list[Person] = []
 
     for r in range(layout.first_person_row, len(rows), layout.rows_per_person):
-        if not _is_person_row(rows, r, layout):
+        status = _person_status(rows, r, layout)
+        if status == "skip":
+            continue
+        if status == "inactive":
+            inactive.append(Person(name=_cell(rows, r, layout.name_col)))
             continue
         person = Person(name=_cell(rows, r, layout.name_col))
         people.append(person)
@@ -197,7 +224,5 @@ def parse_grid(
         if assigned:
             existing[person] = assigned
 
-        r += layout.rows_per_person
-
     grid = AvailabilityGrid(people=tuple(people), dates=dates, codes=codes)
-    return ParsedSheet(grid=grid, existing=existing)
+    return ParsedSheet(grid=grid, existing=existing, inactive=tuple(inactive))

@@ -51,6 +51,9 @@ def propose_from_sheet(settings: Settings, *, client=None) -> Proposal:
     in tests; production passes ``None`` and OAuth runs inside ``load_sheet``.
     """
     parsed = load_sheet(settings, client=client)
+    if parsed.inactive:
+        names = ", ".join(p.name for p in parsed.inactive)
+        print(f"Excluded from rotation (marked Out): {names}", file=sys.stderr)
     grid = select_window(parsed.grid, settings.window_start, settings.window_end)
     return propose(grid, settings, existing=parsed.existing)
 
