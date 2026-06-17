@@ -3,7 +3,7 @@
 Building the Shift Calendar Proposal Generator (see [CLAUDE.md](CLAUDE.md)) from scratch,
 following its suggested build order.
 
-- **Branch:** `mvp-v1` (not pushed)
+- **Branch:** `mvp-v1` (pushed, tracks `origin/mvp-v1`)
 - **Package manager:** `uv` (installed via Homebrew)
 - **Run tests:** `uv run pytest -q`
 - **Lint / format:** `uv run ruff check .` / `uv run ruff format .`
@@ -30,8 +30,27 @@ following its suggested build order.
   tallies + filled dates from `existing`, enumerates blocks, per block: eligible → score → pick
   highest (stable tie-break: lowest YTD load, then name) → record. Empty pool ⇒ block flagged
   unfilled. **The pure engine (step 3) is complete.**
+- **Step 4a — `io/parser.py`:** raw cell grid → `AvailabilityGrid` + existing assignments
+  (`dict[Person, list[date]]`). Encodes the real SupSci layout in a configurable `LayoutConfig`
+  (names col A from row 6, calendar col D from row 2, 2 rows/person). `A/AS/AR/-` collapse via
+  `Code.parse`; `?`/`X` preserved; assignments read from each person's shift row. `parse_date_row`
+  resolves ISO or Sheets serials; bare day-of-month rejected as ambiguous (pass `dates=` to
+  override).
+- **Step 4b — `io/sheets.py`:** gspread + OAuth adapter (the ONLY gspread import). Fetches
+  `UNFORMATTED_VALUE` (dates → serials), stringifies cells. `read_raw_grid` validates `sheet_id`
+  before authorizing (fail fast). `load_sheet` = read + parse. Wiring tested with fakes; live
+  `authorize()` untested.
+- **Step 5a — `output/proposal.py`:** pure render layer. `to_rows` (chronological `ProposalRow`,
+  unfilled merged inline) + `render_report` (text, score trace inline, unfilled flagged) +
+  `term_columns`.
+- **Step 5b — `output/writeback.py`:** CSV export (`to_csv_rows` pure, `write_csv` writes). Columns
+  match the report (base + stable term columns); 4-dp numbers; never live rows. Proposed-column
+  path deferred to first live run.
+- **Step 6 — `cli.py`:** `Settings.from_env → load_sheet → select_window → propose → render_report
+  + write_csv`. `[project.scripts]` entrypoint `shift-proposer`. Flags: `--csv`, `--sheet-id`,
+  `--tab`, `--window-start/-end`. Pipeline tested through a fake sheet; only `main()` touches OAuth.
 
-53 tests passing, ruff clean.
+**84 tests passing, ruff clean. All six build steps complete — MVP is functionally done.**
 
 ## Decisions locked this build (beyond CLAUDE.md)
 
@@ -41,18 +60,26 @@ following its suggested build order.
 - blocks: short remainders (< `shift_len`) **silently dropped** — OK'd for review; revisit if
   remainders should be *flagged* instead.
 
-## Next — step 4 (test-first, stop for review after each module)
+## Next — first live run + follow-ups
 
-1. **`io/parser.py`** — raw cell grid → `AvailabilityGrid` + existing assignments
-   (`Mapping[Person, list[date]]`, the shape `greedy.propose(existing=...)` expects). Maps
-   `A/AS/AR/-` → available via `Code.parse`. Testable with fixture grids (no Sheets).
-2. **`io/sheets.py`** — gspread + OAuth adapter: SupSci tab ↔ raw cell grid. The ONLY gspread
-   import. Not unit-tested against the network.
-
-Then **step 5** (`output/proposal.py`, `output/writeback.py`), **step 6** (`cli.py` wiring).
+1. **First end-to-end run** against the real sheet (needs `SHIFT_SHEET_ID` + one-time OAuth):
+   - One-time auth: place OAuth client secrets at `~/.config/gspread/credentials.json`, then
+     `SHIFT_SHEET_ID=<id> uv run shift-proposer --window-start … --window-end …`.
+   - **Verify the date encoding**: if row 2 is a bare day-of-month, the parser raises "ambiguous";
+     that's the signal to resolve dates from the sheet's year (or confirm `UNFORMATTED_VALUE`
+     returns true serials).
+2. **`output/writeback.py` proposed-column path** — write back into a separate proposed column on
+   the sheet (`output_target = "proposed_column"`), designed once we've seen the live layout.
+3. **Tune weights** in `Settings` against real numbers; revisit `quarter_seed` and whether short
+   block remainders should be *flagged* rather than dropped.
 
 ## Commits
 
+- `62ee494` — cli: wire Settings -> sheets -> engine -> output (step 6)
+- `a07da3b` — output/writeback: CSV export of a Proposal
+- `6c92911` — output/proposal: render Proposal as review report + rows
+- `182e2a4` — io/sheets: gspread+OAuth adapter -> raw SupSci grid
+- `46e4256` — io/parser: raw SupSci grid -> AvailabilityGrid + existing assignments
 - `c892529` — engine/greedy: date-ordered greedy fill into a Proposal
 - `c2a5b2d` — engine/scoring: weighted candidate score with per-term rationale
 - `c323e79` — engine/eligibility: hard candidate gate (X-block + min rest)
