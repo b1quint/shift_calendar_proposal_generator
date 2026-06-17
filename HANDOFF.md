@@ -60,16 +60,24 @@ following its suggested build order.
 - blocks: short remainders (< `shift_len`) **silently dropped** — OK'd for review; revisit if
   remainders should be *flagged* instead.
 
-## Next — first live run + follow-ups
+## First live run — DONE (2026-06-16)
 
-1. **First end-to-end run** against the real sheet (needs `SHIFT_SHEET_ID` + one-time OAuth):
-   - One-time auth: place OAuth client secrets at `~/.config/gspread/credentials.json`, then
-     `SHIFT_SHEET_ID=<id> uv run shift-proposer --window-start … --window-end …`.
-   - **Verify the date encoding**: if row 2 is a bare day-of-month, the parser raises "ambiguous";
-     that's the signal to resolve dates from the sheet's year (or confirm `UNFORMATTED_VALUE`
-     returns true serials).
+Ran end-to-end against the real sheet (`SHIFT_SHEET_ID` + cached OAuth). Confirmed:
+
+- **Date encoding resolved:** row-1 cells are true Google Sheets **serials** (via
+  `UNFORMATTED_VALUE`), parsed correctly — no day-of-month ambiguity. `date_row=1` is right.
+- **Roster gate fix:** sentinel/divider rows (`Science Support`, `(keep these rows empty)`) carry a
+  name in col A and a populated shift row, so they were parsed as phantom people that marked every
+  future date filled → empty proposal. Fixed by gating person rows on the `Avail` label in column C
+  (`LayoutConfig.label_col` / `avail_label`). Now 9 real people; e.g. Jul–Sep 2026 → 14 assignments.
+
+## Next — follow-ups
+
+1. **Sanity-check the fairness numbers.** First real run leaned heavily on one person (large YTD
+   total-deficit). Verify existing shifts are all being counted (name/initials matching on shift
+   rows) before trusting the weights.
 2. **`output/writeback.py` proposed-column path** — write back into a separate proposed column on
-   the sheet (`output_target = "proposed_column"`), designed once we've seen the live layout.
+   the sheet (`output_target = "proposed_column"`), now that the live layout is known.
 3. **Tune weights** in `Settings` against real numbers; revisit `quarter_seed` and whether short
    block remainders should be *flagged* rather than dropped.
 
