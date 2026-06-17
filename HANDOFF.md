@@ -164,15 +164,15 @@ done.** The user added a per-date checkbox row **`Requires support?`** (row 26 o
   blocks jump the shutdown (Aug 11-14 → Aug 22-25). Tests in `test_parser.py` + `test_greedy.py`.
   128 tests, ruff clean.
 
-## ⚠ Cleanup pending — stale writes in `SupSci Shift Proposal`
+## Cleanup of stale writes — DONE (2026-06-17)
 
-The first live write (56 cells, the 14-block proposal) happened **before** row 26 existed, so it wrote
-`S` on **2026-08-17 → 2026-08-21** (now no-shift) and on old block boundaries the no-shift-aware
-proposal no longer makes (e.g. Tiago Aug 15-18, Erik Aug 19-22). The writeback only fills *empty* cells
-and never clears, so a re-run won't remove them. The Q3 gap was empty before the first write, so every
-`S` currently in the 2026-08-03 → 2026-09-30 shift cells is tool-written and safe to clear. **TODO:
-clear those cells, then re-run `--out-tab` for the window** to land the corrected (no-shift-aware)
-proposal — the current dry-run is 13 blocks / would-write 38 (the rest already present, some stale).
+The first live write (56 cells, pre-row-26) had stale `S` on the Aug 17-21 shutdown and on old block
+boundaries. Fixed: cleared all 56 tool-written `S` cells in 2026-08-03 → 2026-09-30 (verified they were
+the only non-empty values there — safe), then re-ran `--out-tab` for the window. **`SupSci Shift
+Proposal` now holds the corrected no-shift-aware proposal: 52 `S` cells (13 blocks × 4), zero on
+2026-08-17 → 2026-08-21** (verified by read-back). Per-person: Tiago 16, Elana 12, David 8, HyeYun 8,
+Bruno 4, Erik 4. (One-off clear via a maintenance script; the tool's writeback stays fill-empty-only —
+see the lower-priority clear/rewrite-mode follow-up.)
 
 ## Other follow-ups (lower priority)
 
