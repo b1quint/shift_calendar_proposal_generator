@@ -28,7 +28,9 @@ rather than forcing a bad assignment. Every pick comes with a score breakdown so
 you can see the rationale.
 
 The result is printed as a readable report and written to a **CSV** you can open
-in any spreadsheet. Nothing is written back to the source sheet (in this version).
+in any spreadsheet. Optionally (`--out-tab`) it also fills the proposal into a
+SupSci-shaped **duplicate tab** — a `"S"` in each assigned person's shift row,
+empty cells only — so you can copy it across. The live source tab is never touched.
 
 ---
 
@@ -123,6 +125,15 @@ SHIFT_SHEET_ID=<your-spreadsheet-id> \
 
 This prints a review report and writes `proposal.csv` in the current folder.
 
+To also FTE-weight fair share and fill a duplicate tab (preview first with
+`--dry-run`, then drop it to write):
+
+```bash
+SHIFT_SHEET_ID=<your-spreadsheet-id> \
+  uv run shift-proposer --window-start 2026-08-03 --window-end 2026-09-30 \
+    --fte-tab "Stats - SupSci" --out-tab "SupSci Shift Proposal" --dry-run
+```
+
 ### Options
 
 | Flag | Default | Meaning |
@@ -133,6 +144,8 @@ This prints a review report and writes `proposal.csv` in the current folder.
 | `--sheet-id ID` | `$SHIFT_SHEET_ID` | Spreadsheet id (overrides the env var). |
 | `--tab NAME` | `SupSci` | Worksheet/tab to read. |
 | `--fte-tab NAME` | none | Tab of per-person target FTE %; enables FTE-weighted fair share. |
+| `--out-tab NAME` | none | SupSci-shaped duplicate tab to write the proposed calendar into (fills empty shift cells). |
+| `--dry-run` | off | With `--out-tab`, report how many cells *would* be written without writing. |
 
 If you omit the window, the whole calendar in the sheet is considered.
 
@@ -219,8 +232,8 @@ These are starting points — tune them once you've seen real proposals.
 
 ## Limitations (this version)
 
-- **Read-only output.** It writes a CSV; it does **not** modify the live sheet.
-  Writing proposals into a separate column on the sheet is planned, not built.
+- **Live rows untouched.** It writes a CSV and, with `--out-tab`, a separate
+  SupSci-shaped duplicate tab. It never modifies the live `SupSci` assignment rows.
 - **SupSci tab** (plus the optional FTE tab), run manually.
 - The date encoding in row 2 is read as a real date. If your sheet stores only a
   bare day-of-month there, the tool will stop with a clear "ambiguous date" error

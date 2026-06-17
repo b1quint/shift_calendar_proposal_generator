@@ -89,7 +89,7 @@ shift_proposer/
 │   └── greedy.py     # loop: block -> eligible -> score -> pick (stable tie-break) -> update
 └── output/
     ├── proposal.py   # Proposal: list[Assignment] + per-pick Rationale (score trace)
-    └── writeback.py  # writes to a separate 'proposed' column/copy or CSV — NEVER live rows
+    └── writeback.py  # CSV export + plan_calendar_fill (pure: proposal -> CellUpdates) — NEVER live rows
 ```
 
 ## Algorithm (greedy + scoring)
@@ -129,6 +129,7 @@ All policy lives in `Settings` (config.py), not scattered in code:
 | Quarter seeded from prior quarter (not reset cold) | `quarter_seed = "carry_deviation"` |
 | Minimum rest = 2 rotations (hard) + maximize spacing (soft) | `min_rest_rotations = 2`, `w_spacing` |
 | Review-first output, never live rows | `output_target = "proposed_column"` |
+| Proposal written to a SupSci-shaped duplicate tab | `proposal_tab_name`, `proposal_token = "S"` |
 
 **Goal of the scoring:** minimize the spread (variance) of per-person load across scientists.
 
@@ -160,8 +161,9 @@ prior-quarter deviation-from-mean into the new quarter). Alternatives: `"carry_t
 ## Conventions / guardrails
 
 - **Never** let `engine/` import `gspread` or touch the filesystem. Adapters only at `io/` / `output/`.
-- **Never** write into the live assignment rows. Writeback targets a separate proposed
-  column/copy or a CSV.
+- **Never** write into the live assignment rows. Writeback targets a CSV or a **separate
+  SupSci-shaped duplicate tab** (`proposal_tab_name`); `io/sheets.write_proposal_calendar`
+  hard-refuses to write the tab named by `tab_name` (the live `SupSci`).
 - **Never** violate the minimum-rest rule — if it leaves no candidate, flag the block unfilled.
 - **Never** commit the spreadsheet id, OAuth secrets, or tokens — load from env/config.
 - Every `Assignment` in a `Proposal` carries its `Rationale`.

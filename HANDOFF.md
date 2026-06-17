@@ -126,13 +126,31 @@ targets differ. Kevin Fanning is in the FTE tab but marked `Out`; the CLI now su
   shift-hours / (weeks × 40 h). This does **not** affect the proposer (relative fair share depends
   only on the *ratio* of targets, so any uniform h/shift cancels) — it only matters for an absolute
   expected-shift-count/hours figure or report. Confirm 10 vs 12 if we ever add absolute targets.
-- **Confluence page** (source of truth, id 1789231127) not yet updated for FTE.
+- **Confluence page** (1789231127) updated for FTE (v9).
 
-## Next — remaining follow-ups (points 2 & 3 of 2026-06-16)
+## Output to a dedicated tab — DONE (2026-06-17)
 
-2. **Output to a dedicated tab.** Push the proposal into a **separate tab** the user will create
-   (not a column in `SupSci`, not just CSV). Implements `output/writeback.py`'s `proposed_column`
-   path against that tab; live `SupSci` rows still never touched.
+Point 2 built, committed (`504c31e`), and run live. The user duplicated SupSci to a tab named
+**`SupSci Shift Proposal`** (exact same layout) and wants the proposal filled in *the way a human
+fills the original*: a token in each assigned person's **shift row** under each date, **empty cells
+only** (never overwrite). The shift-cell token in the live sheet is a literal **`"S"`** (summit
+support; identity comes from the row, not the token — initials live in col B but aren't written).
+
+- **`output/writeback.plan_calendar_fill`** — pure planner: `proposal` + `shift_row_by_name` +
+  `col_by_date` + `is_empty` → `list[CellUpdate]`. Skips non-empty cells, unmapped people/dates,
+  unfilled blocks; token configurable.
+- **`io/parser.index_grid`** → `LayoutIndex(shift_row_by_name, col_by_date)` for a SupSci-shaped grid.
+- **`io/sheets`** — `plan_proposal_calendar` (pure) + `write_proposal_calendar` (reads the tab, plans,
+  applies one `update_cells` batch). **Hard-refuses to write the tab named by `tab_name`** (live SupSci).
+- **`config`** — `proposal_tab_name`, `proposal_token="S"`. **`cli`** — `--out-tab` + `--dry-run`.
+- **Live write:** filled **Q3 open gap 2026-08-03 → 2026-09-30** into `SupSci Shift Proposal`:
+  **56 "S" cells = 14 blocks × 4** (Sep 28-30 short remainder dropped), verified by read-back
+  (Tiago 16, Elana 12, David 8, Erik 8, HyeYun 8, Bruno 4). FTE on (inert at 50% each).
+- Tests: planner in `test_writeback.py`, `index_grid` in `test_parser.py`, write path + the live-tab
+  guard + dry-run in `test_sheets.py`, flags in `test_cli.py`. 123 tests, ruff clean.
+
+## Next — remaining follow-up (point 3 of 2026-06-16)
+
 3. **No-shift periods.** Rare windows where **no shift runs at all** (shutdowns/engineering). Need a
    way to **flag** them so the tool skips them — neither proposing nor flagging as "unfilled — no
    candidate" (intentionally empty ≠ wanted-a-person-but-found-none). Likely a marker row/range the
