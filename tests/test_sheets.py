@@ -75,6 +75,13 @@ def test_open_worksheet_threads_id_and_tab_name():
     assert spreadsheet.requested_tab == "SupSci"
 
 
+def test_read_raw_grid_validates_id_before_authorizing():
+    # No client injected and no sheet id: must fail fast with the clear error,
+    # never reaching the OAuth flow.
+    with pytest.raises(ValueError, match="sheet_id is required"):
+        read_raw_grid(Settings(sheet_id=None))
+
+
 def test_read_raw_grid_uses_injected_client_end_to_end():
     ws = FakeWorksheet([[46184, "A"]])
     client = FakeClient(FakeSpreadsheet(ws))

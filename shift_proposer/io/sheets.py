@@ -65,6 +65,10 @@ def open_worksheet(client: gspread.Client, settings: Settings) -> gspread.Worksh
 
 def read_raw_grid(settings: Settings, *, client: gspread.Client | None = None) -> list[list[str]]:
     """Authorize (unless a ``client`` is injected), open SupSci, fetch the grid."""
+    # Validate before touching OAuth so a missing id fails fast and clearly,
+    # rather than surfacing a credentials error from the auth flow.
+    if not settings.sheet_id:
+        raise ValueError("settings.sheet_id is required (set SHIFT_SHEET_ID).")
     client = client or authorize(settings)
     worksheet = open_worksheet(client, settings)
     return fetch_grid(worksheet)

@@ -21,6 +21,10 @@ __pycache__/
 build/
 dist/
 
+# --- Generated output -----------------------------------------------------
+# The CLI writes the proposal here by default; it is a build artifact.
+/proposal.csv
+
 # --- OS / editor ----------------------------------------------------------
 .DS_Store
 .idea/
