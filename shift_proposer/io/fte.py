@@ -6,20 +6,22 @@ and their target FTE (fraction of full-time dedicated to shifts) — and produce
 ``dict[Person, float]`` suitable for :func:`engine.greedy.propose`'s ``fte``
 argument, where fair share is made proportional to the weight.
 
-Default layout (1-indexed as seen in the sheet; see :class:`FteLayout` for the
-0-indexed values used here):
+Default layout matches the live ``Stats - SupSci`` tab (1-indexed as seen in the
+sheet; see :class:`FteLayout` for the 0-indexed values used here):
 
 * **Column A** — person name. Must match the SupSci name exactly: the name is the
   join key between the two tabs.
-* **Column B** — target FTE, written as a percent (``50%``, ``100%``).
-* **Row 1** — header. Ignored.
-* **Row 2 onward** — one person per row.
+* **Column I** — ``Target Fraction of Time``, written as a percent (``50%``).
+* **Rows 1-5** — title / period / header / unit notes. Ignored.
+* **Row 6 onward** — one person per row, up to the first blank-name row (the
+  roster terminator; a footnote row below it is never reached).
 
 FTE values are parsed by :func:`parse_fte_value`, which accepts ``"50%"`` as well
 as the bare number Google Sheets stores behind a percent cell (``0.5`` when
 fetched unformatted) and a bare percent (``50`` → ``0.5``). The result is always a
-0-1 fraction. Blank-name or blank-value rows are skipped; a duplicate name is an
-error (an FTE tab should list each person once).
+0-1 fraction. A row with a name but a blank FTE is skipped (defaults to ``1.0``
+downstream); a duplicate name is an error (an FTE tab should list each person
+once).
 """
 
 from __future__ import annotations
@@ -34,13 +36,16 @@ from shift_proposer.models import Person
 class FteLayout:
     """0-indexed positions of the FTE tab's structure.
 
-    Defaults: name in column A, FTE in column B, data from row 2 (row 1 is a
-    header). Kept configurable so a layout change is a constructor tweak.
+    Defaults match the live ``Stats - SupSci`` tab: name in column A, FTE in
+    column I (``Target Fraction of Time``), people from row 6, and the roster
+    ends at the first blank-name row. Kept configurable so a layout change is a
+    constructor tweak.
     """
 
     name_col: int = 0  # column A
-    fte_col: int = 1  # column B
-    first_data_row: int = 1  # row 2 (row 1 is a header)
+    fte_col: int = 8  # column I ("Target Fraction of Time")
+    first_data_row: int = 5  # row 6 (rows 1-5 are title/period/header notes)
+    stop_on_blank_name: bool = True  # the roster ends at the first empty name row
 
 
 # Module-level default so it is not constructed in a function signature (B008).
@@ -93,16 +98,22 @@ def parse_fte_grid(
 ) -> dict[Person, float]:
     """Parse the raw FTE cell grid into ``{Person: weight}``.
 
-    Rows with a blank name or a blank FTE value are skipped (a person absent from
-    the result defaults to weight ``1.0`` downstream). A name appearing twice is a
+    A blank-name row ends the roster when ``layout.stop_on_blank_name`` is set
+    (the default — matching "people run from row 6 to the first empty row");
+    otherwise it is skipped. A row with a name but a blank FTE is skipped (that
+    person defaults to weight ``1.0`` downstream). A name appearing twice is a
     ``ValueError``.
     """
     layout = layout or _DEFAULT_FTE_LAYOUT
     result: dict[Person, float] = {}
     for r in range(layout.first_data_row, len(rows)):
         name = _cell(rows, r, layout.name_col)
+        if not name:
+            if layout.stop_on_blank_name:
+                break
+            continue
         raw = _cell(rows, r, layout.fte_col)
-        if not name or not raw:
+        if not raw:
             continue
         person = Person(name=name)
         if person in result:

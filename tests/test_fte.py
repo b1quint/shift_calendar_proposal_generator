@@ -59,40 +59,60 @@ def test_non_positive_value_raises():
 # --- grid parsing ----------------------------------------------------------
 
 
-def test_parse_grid_default_layout():
+# A simple flat layout for the value/skip logic tests (name col A, FTE col B,
+# data from row 0, no blank-name terminator) — keeps these grids small.
+FLAT = FteLayout(name_col=0, fte_col=1, first_data_row=0, stop_on_blank_name=False)
+
+
+def test_parse_grid_default_layout_matches_stats_supsci_tab():
+    # Shape of the live "Stats - SupSci" tab: name col A, FTE col I (index 8),
+    # people from row 6, a blank terminator row, then a footnote row below it.
+    blank = [""] * 9
     rows = [
-        ["Name", "FTE"],  # header (row 1) -> skipped
-        ["Ann", "100%"],
-        ["Bo", "50%"],
-        ["Cai", "75%"],
+        ["Summit Support Scientists"] + [""] * 8,  # row 1: title
+        blank,  # row 2
+        ["Name", "Initials", "", "", "", "", "", "Used", "Target Fraction of Time"],  # row 3
+        blank,  # row 4
+        ["", "", "", "10 hours / shift"] + [""] * 5,  # row 5: unit note
+        ["Ann", "AN", "", "", "", "", "", "0.33", "0.5"],  # row 6 (unformatted 0.5)
+        ["Bo", "BO", "", "", "", "", "", "0.21", "1"],  # row 7 (full-time)
+        [""] * 9,  # row 8: blank -> roster ends here
+        ["Footnote: people in bold ...", "", "", "", "", "", "", "", "0.99"],  # row 9
     ]
-    assert parse_fte_grid(rows) == {ANN: 1.0, BO: 0.5, CAI: 0.75}
+    assert parse_fte_grid(rows) == {ANN: 0.5, BO: 1.0}
 
 
-def test_parse_grid_skips_blank_name_or_value_rows():
+def test_blank_name_row_ends_the_roster_by_default():
     rows = [
-        ["Name", "FTE"],
         ["Ann", "100%"],
-        ["", "50%"],  # no name -> skip
-        ["Bo", ""],  # no value -> skip (defaults to 1.0 downstream)
+        ["", "50%"],  # blank name -> stop; nothing below is read
         ["Cai", "50%"],
     ]
-    assert parse_fte_grid(rows) == {ANN: 1.0, CAI: 0.5}
+    layout = FteLayout(name_col=0, fte_col=1, first_data_row=0)  # stop_on_blank default
+    assert parse_fte_grid(rows, layout=layout) == {ANN: 1.0}
+
+
+def test_blank_value_row_is_skipped_but_roster_continues():
+    rows = [
+        ["Ann", "100%"],
+        ["Bo", ""],  # name present, no FTE -> skipped (defaults to 1.0), continue
+        ["Cai", "50%"],
+    ]
+    assert parse_fte_grid(rows, layout=FLAT) == {ANN: 1.0, CAI: 0.5}
 
 
 def test_parse_grid_rejects_duplicate_name():
     rows = [
-        ["Name", "FTE"],
         ["Ann", "100%"],
         ["Ann", "50%"],
     ]
     with pytest.raises(ValueError, match="duplicate"):
-        parse_fte_grid(rows)
+        parse_fte_grid(rows, layout=FLAT)
 
 
 def test_parse_grid_custom_layout():
     # Name in col B, FTE in col C, data from row 1 (no header).
-    layout = FteLayout(name_col=1, fte_col=2, first_data_row=0)
+    layout = FteLayout(name_col=1, fte_col=2, first_data_row=0, stop_on_blank_name=False)
     rows = [
         ["x", "Ann", "100%"],
         ["x", "Bo", "0.5"],

@@ -181,14 +181,15 @@ If your sheet differs, the positions live in one place — `LayoutConfig` in
 
 ### Target-FTE tab (optional)
 
-To weight fair share by each person's dedication, add a separate tab listing the
-**name** and **target FTE** of every rotation member, and point the tool at it with
-`--fte-tab NAME`. Default layout: **name in column A, FTE in column B, data from row
-2** (row 1 is a header). Write the FTE as a percent (`100%`, `50%`). Names must match
-the SupSci tab exactly — that's the join key, and the tool warns about any name it
-can't match (anyone missing simply defaults to 100%). Positions are configurable in
-`FteLayout` in [shift_proposer/io/fte.py](shift_proposer/io/fte.py). Without `--fte-tab`,
-fair share is a plain equal split.
+To weight fair share by each person's dedication, point the tool at a tab holding
+each member's **name** and **target FTE**, with `--fte-tab NAME` (for this workbook:
+`--fte-tab "Stats - SupSci"`). Default layout matches that tab: **name in column A,
+`Target Fraction of Time` in column I, people from row 6** to the first blank row.
+Write the FTE as a percent (`100%`, `50%`). Names must match the SupSci tab exactly —
+that's the join key, and the tool warns about any name it can't match (anyone missing
+simply defaults to 100%; people marked `Out` are not flagged). Positions are
+configurable in `FteLayout` in [shift_proposer/io/fte.py](shift_proposer/io/fte.py).
+Without `--fte-tab`, fair share is a plain equal split.
 
 ### Availability codes
 

@@ -50,13 +50,18 @@ from the rotation** — never scheduled and never counted in any fair-share aver
 occasional coverers who aren't official rotation members). The CLI reports who it excluded. Markers
 live in `parser.LayoutConfig` (`avail_label`, `inactive_label`).
 
-**Target FTE (separate tab).** Each person has a target **FTE** (fraction of full-time dedicated to
-shifts) that makes fair share proportional rather than an equal split — a 50% person targets about
-half the shifts of a 100% person. FTE lives in its **own tab** (a two-column `name` + `FTE %` list),
-read by the `io/fte.py` adapter and keyed back to the roster by **name** (the join key — a typo
-silently drops a weight, so the CLI warns on mismatches in both directions). Enabled by pointing
-`Settings.fte_tab_name` at that tab (CLI `--fte-tab`); when unset, fair share falls back to the equal
-split. Layout is configurable in `fte.FteLayout` (default: name col A, FTE col B, data from row 2).
+**Target FTE (separate tab).** Each person has a target **FTE** (`Target Fraction of Time` — fraction
+of full-time dedicated to shifts) that makes fair share proportional rather than an equal split — a
+50% person targets about half the shifts of a 100% person. FTE lives in its **own tab**, the live
+`Stats - SupSci`, read by the `io/fte.py` adapter: **name in column A**, **`Target Fraction of Time`
+in column I**, people from **row 6** to the first blank-name row. People are keyed back to the roster
+by **name** (the join key — a typo silently drops a weight, so the CLI warns on mismatches in both
+directions, except for people already marked `Out`). Enabled by pointing `Settings.fte_tab_name` at
+that tab (CLI `--fte-tab "Stats - SupSci"`); when unset, fair share falls back to the equal split.
+Layout is configurable in `fte.FteLayout`. Note: relative fair share only depends on the *ratio* of
+targets, so the shift-hours-vs-FTE-hours conversion (a global constant) does not affect who is
+picked — it would only matter for an absolute expected-shift-count figure. (All targets are currently
+50%, so FTE-weighting presently equals the equal split; it diverges once targets differ.)
 
 ## Architecture — pure core behind an I/O boundary
 

@@ -44,12 +44,18 @@ def select_window(
     return replace(grid, dates=dates)
 
 
-def _report_fte_coverage(people: tuple[Person, ...], fte: dict[Person, float]) -> None:
+def _report_fte_coverage(
+    people: tuple[Person, ...],
+    fte: dict[Person, float],
+    inactive: tuple[Person, ...] = (),
+) -> None:
     """Warn about name-join gaps between the FTE tab and the roster (stderr).
 
     The person name is the join key between the two tabs, so a typo silently
     drops a weight. Surface both directions: roster members with no FTE entry
-    (they default to weight 1.0) and FTE names that match no roster member.
+    (they default to weight 1.0) and FTE names that match no *active* person.
+    People explicitly marked ``Out`` (``inactive``) are expected to be absent
+    from the rotation, so an FTE entry for them is not flagged as a mismatch.
     """
     missing = [p.name for p in people if p not in fte]
     if missing:
@@ -57,8 +63,8 @@ def _report_fte_coverage(people: tuple[Person, ...], fte: dict[Person, float]) -
             f"FTE: no entry for {', '.join(missing)} — defaulting to 1.0 (full-time).",
             file=sys.stderr,
         )
-    roster = set(people)
-    unmatched = [p.name for p in fte if p not in roster]
+    known = set(people) | set(inactive)
+    unmatched = [p.name for p in fte if p not in known]
     if unmatched:
         print(
             f"FTE: {', '.join(unmatched)} in the FTE tab match no roster member "
@@ -83,7 +89,7 @@ def propose_from_sheet(settings: Settings, *, client=None) -> Proposal:
     fte: dict[Person, float] | None = None
     if settings.fte_tab_name:
         fte = load_fte(settings, client=client)
-        _report_fte_coverage(parsed.grid.people, fte)
+        _report_fte_coverage(parsed.grid.people, fte, parsed.inactive)
 
     grid = select_window(parsed.grid, settings.window_start, settings.window_end)
     return propose(grid, settings, existing=parsed.existing, fte=fte)

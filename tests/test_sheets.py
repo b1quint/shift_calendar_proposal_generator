@@ -129,8 +129,18 @@ def test_read_fte_grid_opens_the_configured_fte_tab():
 
 
 def test_load_fte_parses_to_person_weights():
-    fte_ws = FakeWorksheet([["Name", "FTE"], ["Ann", "100%"], ["Bo", "50%"]])
-    client = FakeClient(FakeMultiTabSpreadsheet({"FTE": fte_ws}))
+    # Default layout: name col A, FTE col I (index 8), people from row 6.
+    blank = [""] * 9
+    grid = [
+        blank,
+        blank,
+        ["Name", "", "", "", "", "", "", "", "Target Fraction of Time"],
+        blank,
+        blank,
+        ["Ann", "", "", "", "", "", "", "", "100%"],
+        ["Bo", "", "", "", "", "", "", "", "50%"],
+    ]
+    client = FakeClient(FakeMultiTabSpreadsheet({"FTE": FakeWorksheet(grid)}))
     settings = Settings(sheet_id="SHEET123", fte_tab_name="FTE")
 
     weights = load_fte(settings, client=client)

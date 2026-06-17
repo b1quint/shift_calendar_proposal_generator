@@ -144,10 +144,16 @@ FTE_SHEET = [
     ["", "", "", "", "", "", "", "", "", "", ""],  # end
 ]
 
+# Default FTE layout: name col A, FTE col I (index 8), people from row 6.
+_FTE_BLANK = [""] * 9
 FTE_TAB = [
-    ["Name", "FTE"],
-    ["Ann", "90%"],
-    ["Bo", "10%"],
+    _FTE_BLANK,
+    _FTE_BLANK,
+    ["Name", "", "", "", "", "", "", "", "Target Fraction of Time"],
+    _FTE_BLANK,
+    _FTE_BLANK,
+    ["Ann", "", "", "", "", "", "", "", "90%"],
+    ["Bo", "", "", "", "", "", "", "", "10%"],
 ]
 
 
