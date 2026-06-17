@@ -112,9 +112,21 @@ Point 1 of the three follow-ups is built and committed on `mvp-v1` (112 tests, r
   and an end-to-end `test_cli.py` case where the FTE tab *flips* a pick an equal split would make
   the other way. Docs (CLAUDE.md, README) updated.
 
-**Still open before a live FTE run:** confirm the real FTE tab's name + layout (built against the
-default name-col-A / FTE-col-B / row-2; user said they'd describe it but specifics not yet given),
-then run end-to-end with `--fte-tab`. Confluence page not yet updated for this feature.
+**Live FTE run DONE (2026-06-17).** Real tab is **`Stats - SupSci`**: names in **col A rows 6-13**,
+target FTE in **col I** (`Target Fraction of Time`), blank row 14 terminator, footnote row 15.
+`FteLayout` defaults updated to that shape (col I, row 6, stop at first blank name). Run with
+`--fte-tab "Stats - SupSci"` (Oct-Nov 2026): 15/0, no coverage warnings, and **byte-identical to the
+equal-split run** because every target is currently **50%** — FTE-weighting is correctly inert until
+targets differ. Kevin Fanning is in the FTE tab but marked `Out`; the CLI now suppresses the
+"unmatched name" warning for `Out` people.
+
+**Two clarifications to raise with the user (do not block):**
+- **Hours per shift mismatch.** The user said *12 h/shift* and *1 FTE = 8 h/day / 40 h/week*; the
+  `Stats - SupSci` tab itself notes *10 h/shift* (cols D/E) and computes `Used Fraction of Time` =
+  shift-hours / (weeks × 40 h). This does **not** affect the proposer (relative fair share depends
+  only on the *ratio* of targets, so any uniform h/shift cancels) — it only matters for an absolute
+  expected-shift-count/hours figure or report. Confirm 10 vs 12 if we ever add absolute targets.
+- **Confluence page** (source of truth, id 1789231127) not yet updated for FTE.
 
 ## Next — remaining follow-ups (points 2 & 3 of 2026-06-16)
 
