@@ -92,13 +92,26 @@ Ran end-to-end against the real sheet (`SHIFT_SHEET_ID` + cached OAuth). Confirm
 Sheets-serial date handling. Child page *Requirements & Data Model* = 1790214149 (not yet touched).
 Reachable via the Atlassian MCP in interactive sessions (read/write Confluence + Jira).
 
-## Next — follow-ups
+## Next — to tackle tomorrow (user's three points, 2026-06-16)
 
-1. **`output/writeback.py` proposed-column path** — write back into a separate proposed column on
-   the sheet (`output_target = "proposed_column"`), now that the live layout is known.
-2. **Tune weights** in `Settings` against real numbers (e.g. slight Tiago overshoot); revisit
-   `quarter_seed` and whether short block remainders should be *flagged* rather than dropped.
-3. When scheduling October, start the window at **2026-10-02** (Oct 1 is taken by the last Sep block).
+1. **Per-person target FTE %.** Each person has a target fraction of full-time dedication to shifts,
+   living in **another tab** (tool must read it). Make fair share **FTE-weighted** instead of equal
+   split — 50% FTE → ~half the shifts of 100%. Touches `io/` (new adapter for the FTE tab) +
+   `engine/tallies.py` (fair-share target = FTE-weighted, not `total / N`). "We will have to
+   interact" = read from that tab.
+2. **Output to a dedicated tab.** Push the proposal into a **separate tab** the user will create
+   (not a column in `SupSci`, not just CSV). Implements `output/writeback.py`'s `proposed_column`
+   path against that tab; live `SupSci` rows still never touched.
+3. **No-shift periods.** Rare windows where **no shift runs at all** (shutdowns/engineering). Need a
+   way to **flag** them so the tool skips them — neither proposing nor flagging as "unfilled — no
+   candidate" (intentionally empty ≠ wanted-a-person-but-found-none). Likely a marker row/range the
+   parser reads and `engine/blocks.py` excludes from enumeration.
+
+## Other follow-ups (lower priority)
+
+- **Tune weights** in `Settings` against real numbers (e.g. slight Tiago overshoot); revisit
+  whether short block remainders should be *flagged* rather than dropped.
+- When scheduling October, start the window at **2026-10-02** (Oct 1 is taken by the last Sep block).
 
 ## Commits
 
