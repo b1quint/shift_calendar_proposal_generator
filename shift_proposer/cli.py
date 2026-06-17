@@ -92,7 +92,14 @@ def propose_from_sheet(settings: Settings, *, client=None) -> Proposal:
         _report_fte_coverage(parsed.grid.people, fte, parsed.inactive)
 
     grid = select_window(parsed.grid, settings.window_start, settings.window_end)
-    return propose(grid, settings, existing=parsed.existing, fte=fte)
+    no_shift = [d for d in parsed.no_shift if d in set(grid.dates)]
+    if no_shift:
+        print(
+            f"No-shift dates in window (skipped): {len(no_shift)} "
+            f"({min(no_shift).isoformat()} … {max(no_shift).isoformat()})",
+            file=sys.stderr,
+        )
+    return propose(grid, settings, existing=parsed.existing, fte=fte, no_shift=parsed.no_shift)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

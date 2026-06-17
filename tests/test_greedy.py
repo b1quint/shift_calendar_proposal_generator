@@ -90,6 +90,28 @@ def test_underloaded_person_is_preferred():
     assert proposal.assignments[0].person == ANN
 
 
+def test_no_shift_dates_are_excluded_not_proposed_or_flagged():
+    # 8-day window; mark days 4-5 (indices 3,4) as no-shift -> they split the run
+    # into two stretches of 3 days each, neither long enough for a 4-day block.
+    window = days(MON, 8)
+    no_shift = [window[3], window[4]]
+    proposal = propose(make_grid(window), SETTINGS, no_shift=no_shift)
+    assert proposal.assignments == ()  # no full block survives the gap
+    assert proposal.unfilled == ()  # excluded dates are never flagged
+
+
+def test_no_shift_only_breaks_blocks_does_not_seed_load():
+    # Days 5-8 form a clean block after a 4-day no-shift period at the start.
+    window = days(MON, 8)
+    no_shift = window[0:4]
+    proposal = propose(make_grid(window), SETTINGS, no_shift=no_shift)
+    # The first four days are skipped; the second four are one normal block.
+    assert len(proposal.assignments) == 1
+    assert proposal.assignments[0].block.dates == tuple(window[4:8])
+    # Excluded dates seed nobody, so the all-tied pick is still the lowest name.
+    assert proposal.assignments[0].person == ANN
+
+
 def test_run_is_deterministic():
     window = days(MON, 12)
     grid = make_grid(window)

@@ -40,15 +40,18 @@ def propose(
     settings: Settings,
     existing: Mapping[Person, Iterable[date]] | None = None,
     fte: Mapping[Person, float] | None = None,
+    no_shift: Iterable[date] | None = None,
 ) -> Proposal:
     """Build a :class:`Proposal` for ``grid`` under ``settings``.
 
     ``existing`` maps each person to the dates they are *already* assigned on the
     sheet; those dates seed the fairness tallies and are treated as filled, so no
     block is proposed over them. ``fte`` maps a person to their target FTE weight
-    (fair share is proportional to it); omit it for an equal split. Returns the
-    proposed assignments (date order) plus any blocks left unfilled for lack of an
-    eligible candidate.
+    (fair share is proportional to it); omit it for an equal split. ``no_shift``
+    lists dates that need no shift at all (shutdowns): they are excluded from block
+    enumeration — neither proposed nor flagged unfilled — but never seed the
+    tallies. Returns the proposed assignments (date order) plus any blocks left
+    unfilled for lack of an eligible candidate.
     """
     tallies = Tallies.empty(grid.people, settings, fte=fte)
     filled: set[date] = set()
@@ -57,7 +60,10 @@ def propose(
         tallies.record_days(person, seeded)
         filled.update(seeded)
 
-    blocks = enumerate_blocks(grid.dates, filled, settings.shift_len)
+    # No-shift dates break blocks like filled dates do, but are not assignments
+    # (never seed the tallies) and are never flagged unfilled.
+    excluded = filled | set(no_shift or ())
+    blocks = enumerate_blocks(grid.dates, excluded, settings.shift_len)
 
     assignments: list[Assignment] = []
     unfilled = []

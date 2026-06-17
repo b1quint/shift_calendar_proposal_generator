@@ -109,6 +109,34 @@ def test_index_grid_maps_shift_rows_and_date_columns():
     assert idx.col_by_date == {D1: 3, D2: 4, D3: 5}
 
 
+# --- no-shift ("Requires support?") detection ------------------------------
+
+# GRID plus a "Requires support?" checkbox row: D2 is FALSE (no shift), the
+# others TRUE. Booleans arrive stringified ("True"/"False") from the adapter.
+GRID_WITH_SUPPORT = [
+    *GRID[:-1],  # drop the trailing blank-name terminator
+    ["Requires support?", "", "", "True", "False", "True"],
+]
+
+
+def test_no_shift_dates_read_from_the_support_row():
+    parsed = parse_grid(GRID_WITH_SUPPORT)
+    assert parsed.no_shift == (D2,)  # only the explicit FALSE column
+    # The support row must not be misread as a person.
+    assert parsed.grid.people == (ANN, BO)
+
+
+def test_no_support_row_means_no_no_shift_dates():
+    parsed = parse_grid(GRID)  # no "Requires support?" row present
+    assert parsed.no_shift == ()
+
+
+def test_support_label_disabled_skips_the_scan():
+    layout = LayoutConfig(support_label="")
+    parsed = parse_grid(GRID_WITH_SUPPORT, layout=layout)
+    assert parsed.no_shift == ()
+
+
 def test_roster_stops_at_first_blank_name():
     # Append a stray person *after* the blank divider row; it must be ignored.
     grid = [list(r) for r in GRID]

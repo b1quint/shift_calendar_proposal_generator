@@ -69,6 +69,9 @@ class LayoutConfig:
     first_date_col: int = 3  # column D: first calendar column
     avail_label: str = "Avail"  # marks a real availability row; "" disables the gate
     inactive_label: str = "Out"  # row kept for records but excluded from scheduling
+    # Row (found by its column-A label) of per-date "do we need a shift?" checkboxes.
+    # A FALSE cell marks a no-shift date (shutdown/engineering); "" disables the scan.
+    support_label: str = "Requires support?"
 
 
 # Module-level default so it is not constructed in a function signature (B008).
@@ -82,11 +85,17 @@ class ParsedSheet:
     ``inactive`` lists people present in the sheet but explicitly marked out of
     the rotation (``Out`` in the label column): they are neither scheduled nor
     counted in any fair-share average. Reported so the exclusion is visible.
+
+    ``no_shift`` lists dates flagged as needing no shift at all (the "Requires
+    support?" row's ``FALSE`` cells — shutdowns/engineering): they are excluded
+    from block enumeration entirely, so they are neither proposed nor flagged
+    unfilled.
     """
 
     grid: AvailabilityGrid
     existing: dict[Person, list[date]] = field(default_factory=dict)
     inactive: tuple[Person, ...] = ()
+    no_shift: tuple[date, ...] = ()
 
 
 def _cell(rows: Sequence[Sequence[str]], r: int, c: int) -> str:
@@ -143,6 +152,42 @@ def parse_date_row(cells: Sequence[str]) -> list[date]:
 def _is_assigned(cell: str) -> bool:
     """True if a shift-row cell records an assignment (non-empty, not ``-``)."""
     return bool(cell) and cell != "-"
+
+
+def _is_no_shift(cell: str) -> bool:
+    """True if a "Requires support?" cell is an explicit ``FALSE`` (no shift).
+
+    Only an explicit false counts; blank / ``TRUE`` / anything else means a shift
+    is wanted, so a missing or unticked marker never silently drops a date.
+    """
+    return cell.strip().casefold() == "false"
+
+
+def _find_row_by_label(
+    rows: Sequence[Sequence[str]], label: str, layout: LayoutConfig
+) -> int | None:
+    """Index of the first row whose column-A cell equals ``label`` (case-folded)."""
+    target = label.casefold()
+    for r in range(len(rows)):
+        if _cell(rows, r, layout.name_col).casefold() == target:
+            return r
+    return None
+
+
+def _read_no_shift_dates(
+    rows: Sequence[Sequence[str]], dates: Sequence[date], layout: LayoutConfig
+) -> list[date]:
+    """Dates whose "Requires support?" checkbox is ``FALSE`` (empty if no row)."""
+    if not layout.support_label:
+        return []
+    support_row = _find_row_by_label(rows, layout.support_label, layout)
+    if support_row is None:
+        return []
+    return [
+        day
+        for offset, day in enumerate(dates)
+        if _is_no_shift(_cell(rows, support_row, layout.first_date_col + offset))
+    ]
 
 
 def _person_status(rows: Sequence[Sequence[str]], r: int, layout: LayoutConfig) -> str:
@@ -269,5 +314,12 @@ def parse_grid(
         if assigned:
             existing[person] = assigned
 
+    no_shift = _read_no_shift_dates(rows, dates, layout)
+
     grid = AvailabilityGrid(people=tuple(people), dates=dates, codes=codes)
-    return ParsedSheet(grid=grid, existing=existing, inactive=tuple(inactive))
+    return ParsedSheet(
+        grid=grid,
+        existing=existing,
+        inactive=tuple(inactive),
+        no_shift=tuple(no_shift),
+    )
