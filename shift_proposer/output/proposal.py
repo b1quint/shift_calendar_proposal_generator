@@ -16,7 +16,7 @@ date order so the calendar reads top to bottom):
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -49,6 +49,17 @@ def _ordered_terms(terms: Mapping[str, float]) -> list[tuple[str, float]]:
     """Term ``(key, value)`` pairs in the stable preferred order."""
     known = [(k, terms[k]) for k in _TERM_ORDER if k in terms]
     extra = sorted((k, v) for k, v in terms.items() if k not in _TERM_ORDER)
+    return known + extra
+
+
+def term_columns(rows: Iterable[ProposalRow]) -> list[str]:
+    """The union of term keys across ``rows``, in the stable preferred order.
+
+    Used to build a consistent set of score-term columns for tabular export.
+    """
+    keys = {key for row in rows for key in row.terms}
+    known = [k for k in _TERM_ORDER if k in keys]
+    extra = sorted(k for k in keys if k not in _TERM_ORDER)
     return known + extra
 
 
