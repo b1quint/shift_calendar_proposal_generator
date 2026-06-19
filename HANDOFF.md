@@ -124,10 +124,11 @@ targets differ. Kevin Fanning is in the FTE tab but marked `Out`; the CLI now su
 **Clarifications:**
 - **Hours per shift — DECIDED: 12 h/shift everywhere.** The user confirmed *12 h/shift* (with
   *1 FTE = 8 h/day / 40 h/week*); the tool standardises on this via `Settings.hours_per_shift = 12.0`.
-  (The `Stats - SupSci` tab itself notes *10 h/shift* in cols D/E, but we do not follow it.) This
-  never affected the proposer — relative fair share depends only on the *ratio* of targets, so any
-  uniform h/shift cancels — it only matters for absolute figures such as the shift-utilization report
-  (`--report`), which uses `shift-days × 12 h / (weeks × 40 h)`.
+  The live `Stats - SupSci` tab now also uses *12 h/shift* (row 5, cols D/E = 12), so the two agree.
+  (An earlier version of the tab noted 10 h/shift; that is stale.) This never affected the proposer —
+  relative fair share depends only on the *ratio* of targets, so any uniform h/shift cancels — it
+  only matters for absolute figures such as the shift-utilization report (`--report`), which uses
+  `shift-days × 12 h / (weeks × 40 h)`.
 - **Confluence page** (1789231127) updated for FTE (v9).
 
 ## Output to a dedicated tab — DONE (2026-06-17)
