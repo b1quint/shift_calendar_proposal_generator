@@ -21,10 +21,13 @@ PEOPLE = (ANN, BO, CAI)
 SETTINGS = Settings()  # 12 h/shift, 40 h/week
 
 
-def test_window_weeks_counts_inclusively():
-    # Mon 2026-01-05 .. Sun 2026-01-11 = 7 days = exactly one week.
+def test_window_weeks_counts_every_day_inclusively():
+    # Mon 2026-01-05 .. Sun 2026-01-11 = 7 days = exactly one week (both endpoints).
     assert window_weeks(date(2026, 1, 5), date(2026, 1, 11)) == 1.0
     assert window_weeks(date(2026, 1, 5), date(2026, 1, 18)) == 2.0
+    # The Stats window 2026-04-01 .. 2026-06-30 spans 91 calendar days -> 13.0 weeks
+    # (one more than the tab's 90-day span — we count every day in the range).
+    assert window_weeks(date(2026, 4, 1), date(2026, 6, 30)) == pytest.approx(91 / 7)
 
 
 def test_window_weeks_rejects_reversed_window():
@@ -56,14 +59,15 @@ def test_dates_outside_window_are_excluded():
 
 
 def test_fraction_is_shift_hours_over_fulltime_hours():
-    # One full week window -> 40 working hours. Ann works 2 shift-days = 24 h.
+    # Window 2026-01-05 .. 2026-01-11 -> 7 inclusive days -> 1.0 week -> 40 hours.
+    # Ann works 2 shift-days = 24 h.
     existing = {ANN: [date(2026, 1, 5), date(2026, 1, 6)]}
     rows = build_report(
         PEOPLE, existing, start=date(2026, 1, 5), end=date(2026, 1, 11), settings=SETTINGS
     )
     ann = {r.person: r for r in rows}["Ann"]
     assert ann.shift_hours == pytest.approx(24.0)
-    assert ann.working_hours == pytest.approx(40.0)
+    assert ann.working_hours == pytest.approx(40.0)  # 1.0 week * 40 h
     assert ann.shift_fraction == pytest.approx(24.0 / 40.0)
 
 

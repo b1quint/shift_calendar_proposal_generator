@@ -186,7 +186,11 @@ For each person it reports, within the window (defaults to the whole sheet):
 - **Weekend** — how many of those fall on a Saturday or Sunday
 - **Shift h** — shift-days × **12 h/shift**
 - **Frac** — shift hours as a fraction of full-time working hours
-  (`weeks × 40 h`), i.e. how much of a full-time schedule was spent on shifts
+  (`weeks × 40 h`), i.e. how much of a full-time schedule was spent on shifts.
+  Weeks count **every calendar day in the range inclusively** (`(end − start + 1) / 7`,
+  no rounding). This is one day more than the `Stats - SupSci` tab's `end − start`
+  span, so this figure sits a touch below the tab's `Used Fraction of Time` — by
+  design, since we count every day worked
 
 Rows follow the **spreadsheet's order** by default. Add `--fte-tab NAME` to also
 show each person's target FTE, and `--sort fte` to rank by it (highest first; ties

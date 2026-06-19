@@ -36,8 +36,12 @@ def _is_weekend(day: date) -> bool:
 def window_weeks(start: date, end: date) -> float:
     """Number of weeks spanned by the inclusive window ``[start, end]``.
 
-    Counts whole days inclusively (so a Mon-Sun window is exactly 1.0 weeks) and
-    divides by 7. Raises ``ValueError`` if ``end`` precedes ``start``.
+    Counts **every calendar day in the range**, both endpoints included (so a
+    Mon-Sun window is 7 days = exactly 1.0 weeks), and divides by 7 with no
+    rounding. This is one day more than the ``Stats - SupSci`` tab's
+    ``end - start`` span, so this report's fraction sits a touch below the tab's
+    ``Used Fraction of Time`` — intentional, since we count every day worked.
+    Raises ``ValueError`` if ``end`` precedes ``start``.
     """
     days = (end - start).days + 1
     if days <= 0:
