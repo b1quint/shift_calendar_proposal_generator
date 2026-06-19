@@ -18,9 +18,10 @@ All three follow-ups from the original plan are implemented and run live:
 
 **Shift-utilization report** (`--report`) — a read-only summary of the shifts *already* on the sheet:
 per person, total shift-days, weekend shift-days, and the fraction of full-time working hours spent
-on shifts (12 h/shift over a `weeks × 40 h` full-time denominator, matching the `Stats - SupSci` tab's
-`Used Fraction of Time`). Pure engine (`engine/report.py`) + renderer (`output/report.py`); never
-writes. See the README's [Reporting existing shifts](../README.md#reporting-existing-shifts).
+on shifts (**12 h/shift** over a `weeks × 40 h` full-time denominator — the same method the
+`Stats - SupSci` tab uses for its `Used Fraction of Time`). Pure engine (`engine/report.py`) +
+renderer (`output/report.py`); never writes. See the README's
+[Reporting existing shifts](../README.md#reporting-existing-shifts).
 
 Repo: [shift_calendar_proposal_generator](https://github.com/b1quint/shift_calendar_proposal_generator)
 (branch `mvp-v1`). Build progress is tracked in [HANDOFF.md](../HANDOFF.md).

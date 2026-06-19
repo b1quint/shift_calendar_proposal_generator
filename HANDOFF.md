@@ -121,12 +121,13 @@ equal-split run** because every target is currently **50%** — FTE-weighting is
 targets differ. Kevin Fanning is in the FTE tab but marked `Out`; the CLI now suppresses the
 "unmatched name" warning for `Out` people.
 
-**Two clarifications to raise with the user (do not block):**
-- **Hours per shift mismatch.** The user said *12 h/shift* and *1 FTE = 8 h/day / 40 h/week*; the
-  `Stats - SupSci` tab itself notes *10 h/shift* (cols D/E) and computes `Used Fraction of Time` =
-  shift-hours / (weeks × 40 h). This does **not** affect the proposer (relative fair share depends
-  only on the *ratio* of targets, so any uniform h/shift cancels) — it only matters for an absolute
-  expected-shift-count/hours figure or report. Confirm 10 vs 12 if we ever add absolute targets.
+**Clarifications:**
+- **Hours per shift — DECIDED: 12 h/shift everywhere.** The user confirmed *12 h/shift* (with
+  *1 FTE = 8 h/day / 40 h/week*); the tool standardises on this via `Settings.hours_per_shift = 12.0`.
+  (The `Stats - SupSci` tab itself notes *10 h/shift* in cols D/E, but we do not follow it.) This
+  never affected the proposer — relative fair share depends only on the *ratio* of targets, so any
+  uniform h/shift cancels — it only matters for absolute figures such as the shift-utilization report
+  (`--report`), which uses `shift-days × 12 h / (weeks × 40 h)`.
 - **Confluence page** (1789231127) updated for FTE (v9).
 
 ## Output to a dedicated tab — DONE (2026-06-17)

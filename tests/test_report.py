@@ -76,12 +76,13 @@ def test_fraction_independent_of_fte_uses_fulltime_denominator():
 
 
 def test_hours_per_shift_is_configurable():
+    # Default is 12 h/shift; override to an arbitrary value to prove the knob works.
     existing = {ANN: [date(2026, 1, 5)]}
-    s10 = Settings(hours_per_shift=10.0)
+    custom = Settings(hours_per_shift=6.0)
     rows = build_report(
-        PEOPLE, existing, start=date(2026, 1, 5), end=date(2026, 1, 11), settings=s10
+        PEOPLE, existing, start=date(2026, 1, 5), end=date(2026, 1, 11), settings=custom
     )
-    assert {r.person: r.shift_hours for r in rows}["Ann"] == pytest.approx(10.0)
+    assert {r.person: r.shift_hours for r in rows}["Ann"] == pytest.approx(6.0)
 
 
 def test_rows_sorted_by_most_shifts_then_name_deterministic():

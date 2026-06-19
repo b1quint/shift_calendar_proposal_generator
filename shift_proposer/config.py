@@ -42,8 +42,8 @@ class Settings:
     available_codes: frozenset[Code] = field(default_factory=lambda: AVAILABLE_CODES)
 
     # --- hours accounting (utilization report only; does not affect picks) -
-    # A single shift-day is this many hours. The user's figure is 12 h/shift;
-    # the live `Stats - SupSci` tab notes 10 h/shift — change here if reconciled.
+    # A single shift-day is this many hours. The tool standardises on 12 h/shift
+    # throughout; kept configurable so a different figure is a one-line change.
     hours_per_shift: float = 12.0
     # Full-time working hours per week, the denominator for "fraction of working
     # hours spent on shifts" (matches the sheet's `Used Fraction of Time`, which

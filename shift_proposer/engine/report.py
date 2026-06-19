@@ -10,10 +10,10 @@ it reports:
 * ``working_hours``  — ``weeks_in_window × Settings.fulltime_hours_per_week``
 * ``shift_fraction`` — ``shift_hours / working_hours``
 
-The denominator is full-time (40 h/week) for everyone regardless of their FTE,
-matching the live ``Stats - SupSci`` tab's ``Used Fraction of Time``. So a person
-who is at half their *target* FTE simply shows a smaller fraction; the report does
-not normalise by target.
+The denominator is full-time (40 h/week) for everyone regardless of their FTE —
+the same ``shift-hours / (weeks × 40 h)`` method the live ``Stats - SupSci`` tab
+uses for its ``Used Fraction of Time``. So a person who is at half their *target*
+FTE simply shows a smaller fraction; the report does not normalise by target.
 
 Pure: no ``gspread``, no filesystem — feed it the ``existing`` map the parser
 returns and a window, get plain value objects back.

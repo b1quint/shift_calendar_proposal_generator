@@ -200,9 +200,9 @@ TOTAL        28        9       336    80.8%
 
 Restrict the period with `--window-start` / `--window-end`, and add `--report-csv
 shifts.csv` to also save it. The denominator is full-time (40 h/week) for everyone
-regardless of target FTE — it matches the `Used Fraction of Time` the
-`Stats - SupSci` tab computes (that tab uses **10 h/shift**, though; this report
-uses the **12 h/shift** figure, configurable via `hours_per_shift` in
+regardless of target FTE — the same `shift-hours / (weeks × 40 h)` method the
+`Stats - SupSci` tab uses for its `Used Fraction of Time`. The tool standardises on
+**12 h/shift** throughout (configurable via `hours_per_shift` in
 [config.py](shift_proposer/config.py)). People marked `Out` are not included, since
 the reader excludes them from the roster.
 
