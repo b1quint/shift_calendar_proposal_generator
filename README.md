@@ -149,6 +149,7 @@ SHIFT_SHEET_ID=<your-spreadsheet-id> \
 | `--dry-run` | off | With `--out-tab`, report how many cells *would* be written without writing. |
 | `--report` | off | Report the shifts **already** on the sheet per person instead of proposing — read-only. See [Reporting existing shifts](#reporting-existing-shifts). |
 | `--report-csv PATH` | none | With `--report`, also write the report to this CSV. |
+| `--sort {sheet,fte}` | `sheet` | With `--report`, row order: `sheet` (spreadsheet order) or `fte` (rank by target FTE %, highest first — needs `--fte-tab`). |
 
 If you omit the window, the whole calendar in the sheet is considered.
 
@@ -187,6 +188,10 @@ For each person it reports, within the window (defaults to the whole sheet):
 - **Frac** — shift hours as a fraction of full-time working hours
   (`weeks × 40 h`), i.e. how much of a full-time schedule was spent on shifts
 
+Rows follow the **spreadsheet's order** by default. Add `--fte-tab NAME` to also
+show each person's target FTE, and `--sort fte` to rank by it (highest first; ties
+keep spreadsheet order):
+
 ```
 Shift utilization — 2026-07-01 → 2026-09-30
 Person   Shifts  Weekend   Shift h     Frac
@@ -198,8 +203,15 @@ Cai           7        3        84    20.2%
 TOTAL        28        9       336    80.8%
 ```
 
+```bash
+# rank by target FTE %, adding an FTE column
+SHIFT_SHEET_ID=<id> uv run shift-proposer --report \
+    --fte-tab "Stats - SupSci" --sort fte
+```
+
 Restrict the period with `--window-start` / `--window-end`, and add `--report-csv
-shifts.csv` to also save it. The denominator is full-time (40 h/week) for everyone
+shifts.csv` to also save it (the CSV gains a `target_fte` column). The denominator
+is full-time (40 h/week) for everyone
 regardless of target FTE — the same `shift-hours / (weeks × 40 h)` method the
 `Stats - SupSci` tab uses for its `Used Fraction of Time`. The tool standardises on
 **12 h/shift** throughout (configurable via `hours_per_shift` in

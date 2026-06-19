@@ -20,7 +20,13 @@ from pathlib import Path
 
 from shift_proposer.config import Settings
 from shift_proposer.engine.greedy import propose
-from shift_proposer.engine.report import ShiftReportRow, build_report
+from shift_proposer.engine.report import (
+    SORT_FTE,
+    SORT_MODES,
+    SORT_SHEET,
+    ShiftReportRow,
+    build_report,
+)
 from shift_proposer.io.sheets import load_fte, load_sheet, write_proposal_calendar
 from shift_proposer.models import AvailabilityGrid, Person, Proposal
 from shift_proposer.output.proposal import render_report
@@ -120,18 +126,37 @@ def _sheet_window(
 
 
 def report_from_sheet(
-    settings: Settings, *, client=None
+    settings: Settings, *, sort_by: str = SORT_SHEET, client=None
 ) -> tuple[list[ShiftReportRow], date, date]:
     """Read SupSci's existing shifts and summarise per person over the window.
 
     Read-only: it never proposes or writes. Returns the rows plus the resolved
     ``(start, end)`` so the caller can title the output. ``client`` is injectable
     for testing without auth (mirrors :func:`propose_from_sheet`).
+
+    ``sort_by`` orders the rows (``"sheet"`` keeps the spreadsheet order;
+    ``"fte"`` ranks by target FTE). When ``settings.fte_tab_name`` is set the FTE
+    tab is loaded and shown; ``sort_by="fte"`` requires it (raises ``ValueError``
+    otherwise, since there is nothing to rank by).
     """
     parsed = load_sheet(settings, client=client)
+
+    fte: dict[Person, float] | None = None
+    if settings.fte_tab_name:
+        fte = load_fte(settings, client=client)
+        _report_fte_coverage(parsed.grid.people, fte, parsed.inactive)
+    elif sort_by == SORT_FTE:
+        raise ValueError("--sort fte requires an FTE tab; pass --fte-tab NAME.")
+
     start, end = _sheet_window(parsed.grid, settings.window_start, settings.window_end)
     rows = build_report(
-        parsed.grid.people, parsed.existing, start=start, end=end, settings=settings
+        parsed.grid.people,
+        parsed.existing,
+        start=start,
+        end=end,
+        settings=settings,
+        fte=fte,
+        sort_by=sort_by,
     )
     return rows, start, end
 
@@ -157,6 +182,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--report-csv",
         type=Path,
         help="with --report, also write the report to this CSV path",
+    )
+    parser.add_argument(
+        "--sort",
+        choices=SORT_MODES,
+        default=SORT_SHEET,
+        help="with --report, row order: 'sheet' (spreadsheet order, default) or "
+        "'fte' (rank by target FTE %%, highest first; requires --fte-tab)",
     )
     parser.add_argument(
         "--sheet-id",
@@ -210,10 +242,10 @@ def _settings_from_args(args: argparse.Namespace) -> Settings:
     return Settings.from_env(**overrides)
 
 
-def _run_report(settings: Settings, report_csv: Path | None) -> int:
+def _run_report(settings: Settings, report_csv: Path | None, sort_by: str) -> int:
     """Print the per-person shift-utilization report; optionally write a CSV."""
     try:
-        rows, start, end = report_from_sheet(settings)
+        rows, start, end = report_from_sheet(settings, sort_by=sort_by)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -229,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     settings = _settings_from_args(args)
 
     if args.report:
-        return _run_report(settings, args.report_csv)
+        return _run_report(settings, args.report_csv, args.sort)
 
     try:
         proposal = propose_from_sheet(settings)

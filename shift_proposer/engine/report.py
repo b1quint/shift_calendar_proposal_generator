@@ -45,9 +45,23 @@ def window_weeks(start: date, end: date) -> float:
     return days / 7.0
 
 
+# Accepted values for build_report's ``sort_by`` (and the CLI ``--sort``).
+SORT_SHEET = "sheet"  # preserve the spreadsheet's row order (default)
+SORT_FTE = "fte"  # rank by target FTE, highest first
+SORT_MODES = (SORT_SHEET, SORT_FTE)
+
+# Target FTE assumed for a person absent from the FTE map when ranking — matches
+# the engine's default weight (a missing entry is treated as full-time).
+_DEFAULT_FTE = 1.0
+
+
 @dataclass(frozen=True)
 class ShiftReportRow:
-    """One person's shift totals and utilization over the report window."""
+    """One person's shift totals and utilization over the report window.
+
+    ``fte`` is the person's target FTE fraction (0-1) when an FTE map was
+    supplied, else ``None`` (not loaded — shown blank / omitted downstream).
+    """
 
     person: str
     shift_days: int
@@ -55,6 +69,7 @@ class ShiftReportRow:
     shift_hours: float
     working_hours: float
     shift_fraction: float
+    fte: float | None = None
 
 
 def build_report(
@@ -64,17 +79,33 @@ def build_report(
     start: date,
     end: date,
     settings: Settings,
+    fte: Mapping[Person, float] | None = None,
+    sort_by: str = SORT_SHEET,
 ) -> list[ShiftReportRow]:
     """Summarise each person's shifts in ``[start, end]`` (inclusive).
 
     ``existing`` is the parser's ``Person → assigned dates`` map. Only dates
     inside the window are counted, so the same map can drive any window. The
     full-time working-hours denominator depends only on the window length, so it
-    is shared across people. Rows are returned sorted by most shift-days first,
-    then by name — deterministic for the same inputs.
+    is shared across people. ``fte`` (optional) maps a person to their target FTE
+    fraction; when given it is recorded on each row.
+
+    Ordering (``sort_by``):
+
+    * ``"sheet"`` (default) — preserve the order of ``people`` (the spreadsheet
+      row order, as the parser yields them).
+    * ``"fte"`` — rank by target FTE, highest first; ties keep spreadsheet order
+      (stable sort). A person with no FTE entry is treated as full-time (1.0).
+
+    The result is deterministic for the same inputs. Raises ``ValueError`` for an
+    unknown ``sort_by``.
     """
+    if sort_by not in SORT_MODES:
+        raise ValueError(f"unknown sort_by {sort_by!r} (expected one of {SORT_MODES})")
+
     weeks = window_weeks(start, end)
     working_hours = weeks * settings.fulltime_hours_per_week
+    fte = fte or {}
 
     rows: list[ShiftReportRow] = []
     for person in people:
@@ -91,8 +122,11 @@ def build_report(
                 shift_hours=shift_hours,
                 working_hours=working_hours,
                 shift_fraction=fraction,
+                fte=fte.get(person),
             )
         )
 
-    rows.sort(key=lambda r: (-r.shift_days, r.person))
+    if sort_by == SORT_FTE:
+        # Stable sort by FTE descending keeps spreadsheet order within ties.
+        rows.sort(key=lambda r: -(r.fte if r.fte is not None else _DEFAULT_FTE))
     return rows

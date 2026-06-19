@@ -123,7 +123,7 @@ def test_report_from_sheet_counts_shifts_and_weekends():
     assert by_name["Ann"].shift_hours == 36.0
     # Bo: just Monday -> 1 shift-day, 0 weekend.
     assert (by_name["Bo"].shift_days, by_name["Bo"].weekend_days) == (1, 0)
-    # Most-shifts-first ordering is deterministic.
+    # Default ordering preserves the spreadsheet (row) order.
     assert [r.person for r in rows] == ["Ann", "Bo"]
 
 

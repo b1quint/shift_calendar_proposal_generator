@@ -85,13 +85,64 @@ def test_hours_per_shift_is_configurable():
     assert {r.person: r.shift_hours for r in rows}["Ann"] == pytest.approx(6.0)
 
 
-def test_rows_sorted_by_most_shifts_then_name_deterministic():
+def test_default_order_preserves_spreadsheet_order():
+    # Bo works more shifts, but the default keeps the input (spreadsheet) order.
     existing = {ANN: [date(2026, 1, 5)], BO: [date(2026, 1, 5), date(2026, 1, 6)]}
     rows = build_report(
         PEOPLE, existing, start=date(2026, 1, 1), end=date(2026, 1, 31), settings=SETTINGS
     )
-    # Bo (2) first, then Ann (1), then Cai (0). Ann before Cai is name tie-break at 0? No: Ann=1.
-    assert [r.person for r in rows] == ["Bo", "Ann", "Cai"]
+    assert [r.person for r in rows] == ["Ann", "Bo", "Cai"]
+
+
+def test_sort_by_fte_ranks_highest_first_ties_keep_sheet_order():
+    fte = {ANN: 0.5, BO: 1.0, CAI: 1.0}
+    rows = build_report(
+        PEOPLE,
+        {},
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        settings=SETTINGS,
+        fte=fte,
+        sort_by="fte",
+    )
+    # Bo & Cai (1.0) before Ann (0.5); the 1.0 tie keeps spreadsheet order (Bo, Cai).
+    assert [r.person for r in rows] == ["Bo", "Cai", "Ann"]
+    assert {r.person: r.fte for r in rows}["Ann"] == 0.5
+
+
+def test_missing_fte_treated_as_fulltime_when_ranking():
+    # Cai has no FTE entry -> treated as 1.0, so it outranks the explicit 0.5.
+    fte = {ANN: 0.5, BO: 0.5}
+    rows = build_report(
+        PEOPLE,
+        {},
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        settings=SETTINGS,
+        fte=fte,
+        sort_by="fte",
+    )
+    assert rows[0].person == "Cai"
+    assert rows[0].fte is None  # no entry -> recorded as None, ranked as 1.0
+
+
+def test_fte_is_none_without_fte_map():
+    rows = build_report(
+        PEOPLE, {}, start=date(2026, 1, 1), end=date(2026, 1, 31), settings=SETTINGS
+    )
+    assert all(r.fte is None for r in rows)
+
+
+def test_build_report_rejects_unknown_sort():
+    with pytest.raises(ValueError):
+        build_report(
+            PEOPLE,
+            {},
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 31),
+            settings=SETTINGS,
+            sort_by="bogus",
+        )
 
 
 def test_csv_rows_have_header_and_per_person_rows():
@@ -102,6 +153,7 @@ def test_csv_rows_have_header_and_per_person_rows():
     csv_rows = to_csv_rows(rows)
     assert csv_rows[0] == [
         "person",
+        "target_fte",
         "shift_days",
         "weekend_days",
         "shift_hours",
@@ -109,6 +161,22 @@ def test_csv_rows_have_header_and_per_person_rows():
         "shift_fraction",
     ]
     assert len(csv_rows) == 1 + len(PEOPLE)
+    # No FTE supplied -> the target_fte cell is blank.
+    assert csv_rows[1][1] == ""
+
+
+def test_csv_writes_target_fte_fraction_when_supplied():
+    existing = {ANN: [date(2026, 1, 5)]}
+    rows = build_report(
+        PEOPLE,
+        existing,
+        start=date(2026, 1, 5),
+        end=date(2026, 1, 11),
+        settings=SETTINGS,
+        fte={ANN: 0.5},
+    )
+    by_person = {row[0]: row for row in to_csv_rows(rows)[1:]}
+    assert by_person["Ann"][1] == "0.5000"
 
 
 def test_render_report_handles_empty_window():

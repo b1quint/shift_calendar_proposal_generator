@@ -19,6 +19,7 @@ from shift_proposer.engine.report import ShiftReportRow
 
 _CSV_HEADER = (
     "person",
+    "target_fte",
     "shift_days",
     "weekend_days",
     "shift_hours",
@@ -27,23 +28,45 @@ _CSV_HEADER = (
 )
 
 
+def _fte_seg(value: float | str | None, *, show: bool) -> str:
+    """A ``"   NN%"`` table segment for the FTE column (empty when not shown).
+
+    ``value`` is a header label (``str``), a fraction (``float``), or ``None``
+    (no FTE entry → a dash). Width matches the ``"FTE"`` header so columns align.
+    """
+    if not show:
+        return ""
+    if isinstance(value, str):
+        return f"  {value:>5}"
+    if value is None:
+        return f"  {'-':>5}"
+    return f"  {value * 100:>4.0f}%"
+
+
 def render_report(rows: Sequence[ShiftReportRow], *, start: date, end: date) -> str:
     """An aligned text table of ``rows`` plus a totals footer.
 
     The ``shift_fraction`` is shown as a percentage (1 dp); hours to whole
-    numbers. Totals sum shift/weekend days and shift-hours; the fraction footer
-    is the pooled total (all shift-hours over one person's full-time hours).
+    numbers. A target-FTE column appears only when at least one row carries an
+    FTE (i.e. an FTE tab was supplied). Totals sum shift/weekend days and
+    shift-hours; the fraction footer is the pooled total (all shift-hours over
+    one person's full-time hours).
     """
     header = f"Shift utilization — {start.isoformat()} → {end.isoformat()}"
     if not rows:
         return f"{header}\n(no assigned shifts in window)"
 
+    show_fte = any(r.fte is not None for r in rows)
     name_w = max(len("Person"), max(len(r.person) for r in rows))
-    cols = f"{'Person':<{name_w}}  {'Shifts':>6}  {'Weekend':>7}  {'Shift h':>8}  {'Frac':>7}"
+    cols = (
+        f"{'Person':<{name_w}}{_fte_seg('FTE', show=show_fte)}  "
+        f"{'Shifts':>6}  {'Weekend':>7}  {'Shift h':>8}  {'Frac':>7}"
+    )
     lines = [header, cols, "-" * len(cols)]
     for r in rows:
         lines.append(
-            f"{r.person:<{name_w}}  {r.shift_days:>6}  {r.weekend_days:>7}  "
+            f"{r.person:<{name_w}}{_fte_seg(r.fte, show=show_fte)}  "
+            f"{r.shift_days:>6}  {r.weekend_days:>7}  "
             f"{r.shift_hours:>8.0f}  {r.shift_fraction * 100:>6.1f}%"
         )
 
@@ -54,19 +77,24 @@ def render_report(rows: Sequence[ShiftReportRow], *, start: date, end: date) -> 
     pooled = total_hours / rows[0].working_hours if rows[0].working_hours else 0.0
     lines.append("-" * len(cols))
     lines.append(
-        f"{'TOTAL':<{name_w}}  {total_days:>6}  {total_weekend:>7}  "
+        f"{'TOTAL':<{name_w}}{_fte_seg('', show=show_fte)}  "
+        f"{total_days:>6}  {total_weekend:>7}  "
         f"{total_hours:>8.0f}  {pooled * 100:>6.1f}%"
     )
     return "\n".join(lines)
 
 
 def to_csv_rows(rows: Sequence[ShiftReportRow]) -> list[list[str]]:
-    """The report as string rows, header first (pure — unit-testable)."""
+    """The report as string rows, header first (pure — unit-testable).
+
+    ``target_fte`` is written as a 0-1 fraction (blank when no FTE was supplied).
+    """
     out: list[list[str]] = [list(_CSV_HEADER)]
     for r in rows:
         out.append(
             [
                 r.person,
+                "" if r.fte is None else f"{r.fte:.4f}",
                 str(r.shift_days),
                 str(r.weekend_days),
                 f"{r.shift_hours:.1f}",
