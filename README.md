@@ -1,4 +1,4 @@
-# Shift Calendar Proposal Generator
+# so-shifts-supsci
 
 Reads the **SupSci** availability spreadsheet and produces a **proposed** shift
 calendar for a human to review. It only fills currently-empty dates and explains
@@ -57,8 +57,8 @@ empty cells only — so you can copy it across. The live source tab is never tou
 Clone the repo and let `uv` create the environment and install dependencies:
 
 ```bash
-git clone https://github.com/b1quint/shift_calendar_proposal_generator.git
-cd shift_calendar_proposal_generator
+git clone https://github.com/b1quint/so-shifts-supsci.git
+cd so-shifts-supsci
 uv sync
 ```
 

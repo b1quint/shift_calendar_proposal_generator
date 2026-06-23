@@ -26,7 +26,7 @@ than the `Stats - SupSci` tab's `end − start` span, so the fraction sits a tou
 (`engine/report.py`) + renderer (`output/report.py`); never writes. See the README's
 [Reporting existing shifts](../README.md#reporting-existing-shifts).
 
-Repo: [shift_calendar_proposal_generator](https://github.com/b1quint/shift_calendar_proposal_generator)
+Repo: [so-shifts-supsci](https://github.com/b1quint/so-shifts-supsci)
 (branch `mvp-v1`). Build progress is tracked in [HANDOFF.md](../HANDOFF.md).
 
 ## Planned enhancements (next)
