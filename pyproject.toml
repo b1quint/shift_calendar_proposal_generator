@@ -1,5 +1,5 @@
 [project]
-name = "shift-calendar-proposal-generator"
+name = "so-shifts-supsci"
 version = "0.1.0"
 description = "Reads the SupSci availability spreadsheet and produces a proposed shift calendar for review."
 readme = "README.md"

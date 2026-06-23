@@ -1,6 +1,6 @@
 # Documentation
 
-Design and decision docs for the **Shift Calendar Proposal Generator**, migrated from the
+Design and decision docs for **so-shifts-supsci**, migrated from the
 project's internal Confluence space so they live next to the code. These pages are the
 source of truth for design and decisions — when the implementation diverges, update the
 relevant page here (and the short status page on Confluence) rather than letting them drift.
@@ -28,6 +28,6 @@ build conventions and [HANDOFF.md](../HANDOFF.md) for build progress.
 
 - **Code & build conventions:** [CLAUDE.md](../CLAUDE.md)
 - **Build progress / handoff log:** [HANDOFF.md](../HANDOFF.md)
-- **Repo:** [shift_calendar_proposal_generator](https://github.com/b1quint/shift_calendar_proposal_generator)
+- **Repo:** [so-shifts-supsci](https://github.com/b1quint/so-shifts-supsci)
 - **Confluence:** a single short [status page](https://rubinobs.atlassian.net/wiki/spaces/~60024d0e332c3a01075cd858/pages/1789231127)
   remains as a pointer back to these docs.
