@@ -272,8 +272,8 @@ def test_parse_args_apply_defaults_false():
 
 
 def test_w_question_threads_into_settings():
-    # No flag -> Settings default (1.5) is used.
-    assert _settings_from_args(parse_args([])).w_question == 1.5
+    # No flag -> Settings default (2.0) is used.
+    assert _settings_from_args(parse_args([])).w_question == 2.0
     # --w-question overrides it.
     s = _settings_from_args(parse_args(["--w-question", "3.0"]))
     assert s.w_question == 3.0
